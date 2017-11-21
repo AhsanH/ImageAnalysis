@@ -299,6 +299,27 @@ public:
                 }
             }
         }
+        int prev_size = INT_MAX;
+        while(myBorderPixels.size()<prev_size){
+            vector< vector<int> > Border_map(row_size, vector<int>(col_size));
+            for(int i = 0; i<myBorderPixels.size();i++){
+                x = myBorderPixels[i].first;
+                y = myBorderPixels[i].second;
+                Border_map[x][y] = 1;
+            }
+            prev_size = myBorderPixels.size();
+            myBorderPixels.clear();
+            for(int i = 1; i<row_size-1; i++){
+                for(int j = 1; j<col_size-1; j++){
+                    if(((Border_map[i][j-1]==1)&&(Border_map[i][j+1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i+1][j]==1))||((Border_map[i+1][j]==1)&&(Border_map[i][j-1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i][j+1]==1))){
+                        myBorderPixels.push_back(make_pair(i,j));
+                    }
+                }
+            }
+        }
+
+
+
         return myBorderPixels;
     }
 
