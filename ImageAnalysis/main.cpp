@@ -9,7 +9,7 @@ using namespace cv;
 class ImageFunc{
 
 Mat image;
-vector<pair<int,int>> segmented_pixels;
+vector<pair<int,int>> myPixels;
 public:
 
     ImageFunc(const string& str){
@@ -32,11 +32,11 @@ public:
         uchar B_i = p[y][2];
 
         vector< vector<int> > map(row_size, vector<int>(col_size));
-        vector<pair<int, int> >myStack, myPixels;
+        vector<pair<int, int> >myStack;
         pair<int,int> current;
         myStack.push_back(make_pair(x,y));
         map[x][y] = 1;
-        const int threshold = 15;
+        const int threshold = 30;
         while(myStack.size()>0){
             current = myStack.back();
             myStack.pop_back();
@@ -278,6 +278,23 @@ public:
         return myPixels;
     }
 
+    void Display_Pixels(void){
+        int x, y;
+        Mat cpy_image = image;
+        Vec3b *p;
+        for(int i = 0; i<myPixels.size();i++){
+            x = myPixels[i].first;
+            p = cpy_image.ptr<Vec3b>(x);
+            y = myPixels[i].second;
+            p[y][0] = 255;
+            p[y][1] = 255;
+            p[y][2] = 255;
+        }
+
+        namedWindow("output", WINDOW_AUTOSIZE);
+        imshow("output", cpy_image);
+        waitKey(0);
+    }
 
 
 
@@ -291,5 +308,8 @@ int main()
     ImageFunc I("bench.jpg");
     I.Display_Image();
     vector<pair<int, int> >myPix = I.FIND_REGION(23,34);
+    cout<<myPix.size()<<endl;
+    I.Display_Pixels();
+
     return 0;
 }

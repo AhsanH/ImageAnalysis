@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1511300097 source:c:\users\ahsan\desktop\gihub\imageanalysis\imageanalysis\main.cpp
+	<iostream>
+	<vector>
+	<cstdlib>
+	<opencv2/highgui/highgui.hpp>
+
