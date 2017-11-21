@@ -342,6 +342,10 @@ public:
         waitKey(0);
     }
 
+    void Save_Pixels(string &path_name, const Mat &image){
+        imwrite(path_name, image);
+    }
+
 
 
 
