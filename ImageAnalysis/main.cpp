@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <climits>
 #include <opencv2/highgui/highgui.hpp>
 
 using namespace std;
@@ -9,7 +10,8 @@ using namespace cv;
 class ImageFunc{
 
 Mat image;
-vector<pair<int,int>> myPixels;
+
+
 public:
 
     ImageFunc(const string& str){
@@ -33,6 +35,7 @@ public:
 
         vector< vector<int> > map(row_size, vector<int>(col_size));
         vector<pair<int, int> >myStack;
+        vector<pair<int,int>> myPixels;
         pair<int,int> current;
         myStack.push_back(make_pair(x,y));
         map[x][y] = 1;
@@ -278,14 +281,36 @@ public:
         return myPixels;
     }
 
-    void Display_Pixels(void){
+    vector<pair<int,int>> FIND_PERIMETER(vector<pair<int,int>> &pixels){
+        int row_size = image.rows;
+        int col_size = image.cols;
+        vector<pair<int,int>> myBorderPixels;
+        vector< vector<int> > map(row_size, vector<int>(col_size));
+        int x,y;
+        for(int i = 0; i<pixels.size();i++){
+            x = pixels[i].first;
+            y = pixels[i].second;
+            map[x][y] = 1;
+        }
+        for(int i = 1; i<row_size-1; i++){
+            for(int j = 1; j<col_size-1; j++){
+                if(((map[i][j-1]==0)&&(map[i][j+1]==1))||((map[i][j-1]==1)&&(map[i][j+1]==0))||((map[i-1][j]==0)&&(map[i+1][j]==1))||((map[i-1][j]==1)&&(map[i+1][j]==0))){
+                    myBorderPixels.push_back(make_pair(i,j));
+                }
+            }
+        }
+        return myBorderPixels;
+    }
+
+
+    void Display_Pixels(vector<pair<int,int>> &pixels){
         int x, y;
         Mat cpy_image = image;
         Vec3b *p;
-        for(int i = 0; i<myPixels.size();i++){
-            x = myPixels[i].first;
+        for(int i = 0; i<pixels.size();i++){
+            x = pixels[i].first;
             p = cpy_image.ptr<Vec3b>(x);
-            y = myPixels[i].second;
+            y = pixels[i].second;
             p[y][0] = 255;
             p[y][1] = 255;
             p[y][2] = 255;
@@ -306,10 +331,11 @@ public:
 int main()
 {
     ImageFunc I("bench.jpg");
-    I.Display_Image();
-    vector<pair<int, int> >myPix = I.FIND_REGION(23,34);
-    cout<<myPix.size()<<endl;
-    I.Display_Pixels();
-
+    //I.Display_Image();
+    vector<pair<int, int> >myPix = I.FIND_REGION(156,299);
+    //cout<<myPix.size()<<endl;
+    //I.Display_Pixels(myPix);
+    vector<pair<int, int> >myBorder = I.FIND_PERIMETER(myPix);
+    I.Display_Pixels(myBorder);
     return 0;
 }
