@@ -2,7 +2,12 @@
 #include <vector>
 #include <cstdlib>
 #include <climits>
+#include <string>
+#include <fstream>
+#include <cstdio>
 #include <opencv2/highgui/highgui.hpp>
+
+
 
 using namespace std;
 using namespace cv;
@@ -13,17 +18,21 @@ Mat image;
 
 
 public:
-
+    vector<pair<int,int>> myPixels;
+    int a,b;
+    ImageFunc(){}
     ImageFunc(const string& str){
         image = imread(str);
     }
-    void Display_Image(void){
+    void DISPLAY_IMAGE(void){
         namedWindow("input", WINDOW_AUTOSIZE);
         imshow("input", this->image);
         waitKey(0);
     }
 
     vector<pair<int,int>> FIND_REGION(int x, int y){
+        a = x;
+        b = y;
         int row_size = image.rows;
         int col_size = image.cols;
 
@@ -35,11 +44,11 @@ public:
 
         vector< vector<int> > map(row_size, vector<int>(col_size));
         vector<pair<int, int> >myStack;
-        vector<pair<int,int>> myPixels;
+
         pair<int,int> current;
         myStack.push_back(make_pair(x,y));
         map[x][y] = 1;
-        const int threshold = 30;
+        const int threshold = 10;
         while(myStack.size()>0){
             current = myStack.back();
             myStack.pop_back();
@@ -281,15 +290,15 @@ public:
         return myPixels;
     }
 
-    vector<pair<int,int>> FIND_PERIMETER(vector<pair<int,int>> &pixels){
+    vector<pair<int,int>> FIND_PERIMETER(void){
         int row_size = image.rows;
         int col_size = image.cols;
         vector<pair<int,int>> myBorderPixels;
         vector< vector<int> > map(row_size, vector<int>(col_size));
         int x,y;
-        for(int i = 0; i<pixels.size();i++){
-            x = pixels[i].first;
-            y = pixels[i].second;
+        for(int i = 0; i<myPixels.size();i++){
+            x = myPixels[i].first;
+            y = myPixels[i].second;
             map[x][y] = 1;
         }
         for(int i = 1; i<row_size-1; i++){
@@ -299,6 +308,7 @@ public:
                 }
             }
         }
+
         int prev_size = INT_MAX;
         while(myBorderPixels.size()<prev_size){
             vector< vector<int> > Border_map(row_size, vector<int>(col_size));
@@ -311,12 +321,13 @@ public:
             myBorderPixels.clear();
             for(int i = 1; i<row_size-1; i++){
                 for(int j = 1; j<col_size-1; j++){
-                    if(((Border_map[i][j-1]==1)&&(Border_map[i][j+1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i+1][j]==1))||((Border_map[i+1][j]==1)&&(Border_map[i][j-1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i][j+1]==1))){
+                    if(((Border_map[i][j-1]==1)&&(Border_map[i][j+1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i+1][j]==1))||((Border_map[i+1][j]==1)&&(Border_map[i][j-1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i][j+1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i][j-1]==1))||((Border_map[i+1][j]==1)&&(Border_map[i][j+1]==1))){
                         myBorderPixels.push_back(make_pair(i,j));
                     }
                 }
             }
         }
+
 
 
 
@@ -326,15 +337,16 @@ public:
 
     void Display_Pixels(vector<pair<int,int>> &pixels){
         int x, y;
-        Mat cpy_image = image;
+        Mat cpy_image(image.rows, image.cols, image.type());
+        image.copyTo(cpy_image);
         Vec3b *p;
         for(int i = 0; i<pixels.size();i++){
             x = pixels[i].first;
             p = cpy_image.ptr<Vec3b>(x);
             y = pixels[i].second;
-            p[y][0] = 255;
-            p[y][1] = 255;
-            p[y][2] = 255;
+            p[y][0] = 0;
+            p[y][1] = 0;
+            p[y][2] = 0;
         }
 
         namedWindow("output", WINDOW_AUTOSIZE);
@@ -342,25 +354,139 @@ public:
         waitKey(0);
     }
 
-    void Save_Pixels(string &path_name, const Mat &image){
+    void Save_Pixels(string const &path_name, const Mat &image){
         imwrite(path_name, image);
     }
 
+    friend void Serializer(ImageFunc obj);
 
+    friend ImageFunc Deserializer(void);
 
 
 
 };
 
+class S_Data{
+public:
+    int nRows;
+    int nCols;
+    int type;
+    int a;
+    int b;
+    uchar str[1000000];
 
-int main()
+};
+
+void Serializer(ImageFunc obj){
+    ofstream file;
+    file.open("aaa.txt");
+    S_Data data;
+    int nRows = obj.image.rows;
+    int nCols = obj.image.cols;
+    int type = obj.image.type();
+    data.nRows = nRows;
+    data.nCols = nCols;
+    data.type = type;
+    int ix = 0;
+    Vec3b *p;
+    for (int i = 0; i < nRows; ++i) {
+        p = obj.image.ptr<Vec3b>(i);
+        for (int j = 0; j < nCols; ++j) {
+            data.str[ix] = p[j][0];
+            ix++;
+            data.str[ix] = p[j][1];
+            ix++;
+            data.str[ix] = p[j][2];
+            ix++;
+        }
+    }
+
+    if(obj.myPixels.size()!=0){
+        //cout<<obj.myPixels.size()<<endl;
+        data.a = obj.a;
+        data.b = obj.b;
+
+    }
+    file.write((char*)&data,sizeof(data));
+    file.close();
+
+}
+
+ImageFunc Deserializer(void){
+    ifstream file;
+    file.open("aaa.txt");
+    S_Data data;
+    ImageFunc obj;
+    file.read((char*)&data,sizeof(data));
+    int nRows = data.nRows;
+    int nCols = data.nCols;
+    int type = data.type;
+
+    Mat r_image(nRows, nCols, type);
+
+
+    int ix = 0;
+    Vec3b *p;
+    for (int i = 0; i < nRows; ++i) {
+        p = r_image.ptr<Vec3b>(i);
+        for (int j = 0; j < nCols; ++j) {
+            p[j][0] = data.str[ix];
+            ix++;
+            p[j][1] = data.str[ix];
+            ix++;
+            p[j][2] = data.str[ix];
+            ix++;
+        }
+    }
+    obj.image = r_image;
+
+    if(data.a!=0){
+
+        obj.a = data.a;
+        obj.b = data.b;
+
+
+    }
+    return obj;
+}
+
+
+int main(int argc, char* argv[])
 {
-    ImageFunc I("bench.jpg");
-    //I.Display_Image();
-    vector<pair<int, int> >myPix = I.FIND_REGION(156,299);
+    if(string(argv[1]) == "read"){
+        ImageFunc I(argv[2]);
+        Serializer(I);
+
+    }
+    else if(string(argv[1])== "display_image"){
+        ImageFunc I = Deserializer();
+        I.DISPLAY_IMAGE();
+    }
+    else if(string(argv[1])== "find_region"){
+        ImageFunc I = Deserializer();
+        vector<pair<int, int> >myPix = I.FIND_REGION(atoi(argv[2]),atoi(argv[3]));
+        I.Display_Pixels(myPix);
+        Serializer(I);
+    }
+    else if(string(argv[1])=="find_perimeter"){
+        ImageFunc I = Deserializer();
+        I.FIND_REGION(I.a,I.b);
+        vector<pair<int, int> >myBorder = I.FIND_PERIMETER();
+        I.Display_Pixels(myBorder);
+    }
+
+
+    /*
+    ImageFunc I("test1.png");
+    I.Display_Image();
+    vector<pair<int, int> >myPix = I.FIND_REGION(10,10);
     //cout<<myPix.size()<<endl;
-    //I.Display_Pixels(myPix);
+    I.Display_Pixels(myPix);
+
     vector<pair<int, int> >myBorder = I.FIND_PERIMETER(myPix);
+    //cout<<myBorder.size()<<endl;
     I.Display_Pixels(myBorder);
+
     return 0;
+    */
 }
