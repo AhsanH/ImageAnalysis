@@ -334,6 +334,117 @@ public:
         return myBorderPixels;
     }
 
+    vector<pair<int,int>> FIND_SMOOTH_PERIMETER(void){
+        int row_size = image.rows;
+        int col_size = image.cols;
+        vector<pair<int,int>> myBorderPixels;
+        vector< vector<int> > map(row_size, vector<int>(col_size));
+        int x,y;
+        for(int i = 0; i<myPixels.size();i++){
+            x = myPixels[i].first;
+            y = myPixels[i].second;
+            map[x][y] = 1;
+        }
+        for(int i = 1; i<row_size-1; i++){
+            for(int j = 1; j<col_size-1; j++){
+                if(((map[i][j-1]==0)&&(map[i][j+1]==1))||((map[i][j-1]==1)&&(map[i][j+1]==0))||((map[i-1][j]==0)&&(map[i+1][j]==1))||((map[i-1][j]==1)&&(map[i+1][j]==0))){
+                    myBorderPixels.push_back(make_pair(i,j));
+                }
+            }
+        }
+
+        int prev_size = INT_MAX;
+        while(myBorderPixels.size()<prev_size){
+            vector< vector<int> > Border_map(row_size, vector<int>(col_size));
+            for(int i = 0; i<myBorderPixels.size();i++){
+                x = myBorderPixels[i].first;
+                y = myBorderPixels[i].second;
+                Border_map[x][y] = 1;
+            }
+            prev_size = myBorderPixels.size();
+            myBorderPixels.clear();
+            for(int i = 1; i<row_size-1; i++){
+                for(int j = 1; j<col_size-1; j++){
+                    if(((Border_map[i][j-1]==1)&&(Border_map[i][j+1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i+1][j]==1))||((Border_map[i+1][j]==1)&&(Border_map[i][j-1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i][j+1]==1))||((Border_map[i-1][j]==1)&&(Border_map[i][j-1]==1))||((Border_map[i+1][j]==1)&&(Border_map[i][j+1]==1))){
+                        myBorderPixels.push_back(make_pair(i,j));
+                    }
+                }
+            }
+        }
+
+
+
+        vector< vector<int> > x_map(row_size, vector<int>(col_size));
+        vector< vector<int> > y_map(row_size, vector<int>(col_size));
+        for(int i = 0; i<myBorderPixels.size();i++){
+            x_map[myBorderPixels[i].first][myBorderPixels[i].second] = myBorderPixels[i].first;
+            y_map[myBorderPixels[i].first][myBorderPixels[i].second] = myBorderPixels[i].second;
+        }
+
+        vector<vector<int> >kernel {
+            {1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1}
+        };
+
+        int kRow = kernel.size();
+        int kCol = kernel[0].size();
+
+        vector< vector<double> > x_map_smooth(row_size,vector<double>(col_size));
+        vector< vector<double> > y_map_smooth(row_size,vector<double>(col_size));
+
+        int kCenterX = kCol / 2;
+        int kCenterY = kRow / 2;
+
+
+
+        int count;
+
+        for(int i=0; i < row_size; ++i) {
+            for(int j=0; j < col_size; ++j) {
+                if(x_map[i][j] == 0){
+                    continue;
+                }
+                count = 0;
+                for(int m=0; m < kRow; ++m) {
+                    int mm = kRow - 1 - m;
+                    for(int n=0; n < kCol; ++n) {
+                        int nn = kCol - 1 - n;
+                        int ii = i + (m - kCenterY);
+                        int jj = j + (n - kCenterX);
+
+                        if( ii >= 0 && ii < row_size && jj >= 0 && jj < col_size ){
+                            x_map_smooth[i][j] += x_map[ii][jj] * kernel[mm][nn];
+                            y_map_smooth[i][j] += y_map[ii][jj] * kernel[mm][nn];
+                            if(x_map[ii][jj]!=0)
+                                count++;
+                        }
+                    }
+                }
+                x_map_smooth[i][j] = x_map_smooth[i][j]/count;
+                y_map_smooth[i][j] = y_map_smooth[i][j]/count;
+            }
+        }
+
+
+        vector<pair<int,int>> smoothBorderPixels;
+        for(int i = 0; i<myBorderPixels.size();i++){
+            smoothBorderPixels.push_back(make_pair(round(x_map_smooth[myBorderPixels[i].first][myBorderPixels[i].second]),round(y_map_smooth[myBorderPixels[i].first][myBorderPixels[i].second])));
+        }
+
+
+        return smoothBorderPixels;
+
+    }
+
+
+
+
+
 
     void Display_Pixels(vector<pair<int,int>> &pixels){
         int x, y;
@@ -474,6 +585,13 @@ int main(int argc, char* argv[])
         vector<pair<int, int> >myBorder = I.FIND_PERIMETER();
         I.Display_Pixels(myBorder);
     }
+    else if(string(argv[1])=="find_smooth_perimeter"){
+        ImageFunc I = Deserializer();
+        I.FIND_REGION(I.a,I.b);
+        vector<pair<int, int> >mySmoothBorder = I.FIND_SMOOTH_PERIMETER();
+        I.Display_Pixels(mySmoothBorder);
+    }
+
 
 
     /*
